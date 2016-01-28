@@ -1,0 +1,6 @@
+Stuff to do
+1.) Create chars
+2.) Make particle container relative to number of chars
+3.) Create slider for size of particles
+4.) Add all chars to an array. Create funtion to search for chars and return them
+5.) Create start up box -> text input at when program starts
