@@ -10,11 +10,9 @@
 //
 
 /*
-1.) Add Mesh to letters
-2.) Orient letters correctly
-3.) Scale letters correctly
-4.) Fix control sliders
-5.) Fix getting a file
+2.) Work on spacing of the letters
+3.) Make letter textures look better
+Work on collisions
 */
 
 ///////////////////////////////////////////////////
@@ -54,7 +52,7 @@ using namespace gui;
 // programming practice, but enough for quick tests)
 
 double STATIC_flow = 100;
-double STATIC_size = .01;
+double STATIC_size = .03;
 std::vector<ChSharedPtr<ChBody> > particlelist;
 std::vector<ChSharedPtr<ChBody> > letterlist;
 
@@ -76,8 +74,8 @@ public:
 
 		// ..add GUI slider to particle size
 		scrollbar_speed = application->GetIGUIEnvironment()->addScrollBar(true, rect<s32>(510, 125, 650, 140), 0, 102);
-		scrollbar_speed->setMax(1);
-		scrollbar_speed->setPos(.1);
+		scrollbar_speed->setMax(10);
+		scrollbar_speed->setPos(5);
 		text_speed = application->GetIGUIEnvironment()->addStaticText(L"Particle Size [m]",
 			rect<s32>(650, 125, 750, 140), false);
 	}
@@ -98,7 +96,7 @@ public:
 				if (id == 102)  // id of 'size' slider..
 				{
 					s32 pos = ((IGUIScrollBar*)event.GUIEvent.Caller)->getPos();
-					STATIC_size = ((double)pos);
+					STATIC_size = ((double)pos) / 100;
 				}
 				break;
 			}
@@ -119,8 +117,8 @@ private:
 // Function that creates debris that fall on the conveyor belt, to be called at each dt
 
 void create_debris(ChIrrApp& application, double dt, double particles_second, std::string letters) {
-	double xnozzlesize = .5;
-	double znozzlesize = .08*letters.length();
+	double xnozzlesize = .6*letters.length();
+	double znozzlesize = .3;
 	double ynozzle = .8;
 
 	double density = 3;
@@ -143,7 +141,7 @@ void create_debris(ChIrrApp& application, double dt, double particles_second, st
 				3,       // density
 				true,    // collide enable?
 				true));  // visualization?
-			mrigidBody->SetPos(ChVector<>(-0.5 * xnozzlesize + ChRandom() * xnozzlesize, ynozzle + i * 0.005 + .25,
+			mrigidBody->SetPos(ChVector<>(-.1 * xnozzlesize + ChRandom() * xnozzlesize, ynozzle + i * 0.005 + .25,
 				-0.5 * znozzlesize + ChRandom() * znozzlesize));
 			mrigidBody->GetMaterialSurface()->SetFriction(0.2f);
 			mrigidBody->GetMaterialSurface()->SetRestitution(0.8f);
@@ -175,35 +173,26 @@ void assemble_letters(ChIrrApp& application, std::string letters) {
 	for (int i = 0; i < letters.length(); i++) {
 		ChSharedPtr<ChBody> letterBody(new ChBody());
 		ChSharedPtr<ChObjShapeFile> lettermesh(new ChObjShapeFile);
-		ChSharedPtr<ChObjShapeFile> lettertexture(new ChObjShapeFile);
+		ChSharedPtr<ChTexture> lettertexture(new ChTexture());
 
 		std::string str;
-		str = letters;
+		str = letters[i];
 
-		lettermesh->SetFilename(GetChronoDataFile((letters[i] + ".obj")));
-		std::cout << lettermesh->GetFilename() << std::endl;
-		lettertexture->SetFilename(GetChronoDataFile("RedTexture.png"));
-
-		std::cout << "NNNNNNNNNNNNN" << std::endl;
-		std::cout << letters[i] + ".obj" << std::endl;
-		//std::cout << ".png" << std::endl;
-		std::cout << "NNNNNNNNNNNNN" << std::endl;
-
-		/*
-		std::cout << "AAAAAAAA" << std::endl;
-		std::cout << letters << std::endl;
-		std::cout << "AAAAAAAA" << std::endl;
-		*/
+		lettermesh->SetFilename(GetChronoDataFile((str + ".obj")));
+		lettertexture->SetTextureFilename(GetChronoDataFile("RedTexture.png"));
 
 		letterBody->AddAsset(lettermesh);
 		letterBody->SetBodyFixed(true);
 		letterBody->RecomputeCollisionModel();
 		letterBody->SetCollide(true);
-		letterBody->SetPos(ChVector<>( 0, .5, 0));
-		letterBody->SetRot(Q_from_AngAxis(90, ChVector<>((3.1415926/2), 0, 0)));
-		letterBody->AddAsset(lettertexture);
+		letterBody->SetPos(ChVector<>( .6*(i) , .1, 0));
+		letterBody->SetRot(Q_from_AngAxis(90, ChVector<>(90, 0, 0)));
 
 		application.GetSystem()->Add(letterBody);
+		std::cout << letterBody->GetCollide() << std::endl;
+
+
+		letterBody->AddAsset(lettertexture);
 
 		application.AssetBind(letterBody);
 		application.AssetUpdate(letterBody);
@@ -226,15 +215,15 @@ int main(int argc, char* argv[]) {
 
 	// Create the Irrlicht visualization (open the Irrlicht device,
 	// bind a simple user interface, etc. etc.)
-	ChIrrApp application(&mphysicalSystem, L"Conveyor belt", core::dimension2d<u32>(800, 600), false);
+	ChIrrApp application(&mphysicalSystem, L"Particulator", core::dimension2d<u32>(800, 600), false);
 
 	// Easy shortcuts to add camera, lights, logo and sky in Irrlicht scene:
 	ChIrrWizard::add_typical_Logo(application.GetDevice());
 	ChIrrWizard::add_typical_Sky(application.GetDevice());
-	ChIrrWizard::add_typical_Lights(application.GetDevice(), core::vector3df(-1.5, .25, 0),
+	ChIrrWizard::add_typical_Lights(application.GetDevice(), core::vector3df(0, 0, -1),
 		core::vector3df((f32)0, 0, 0));
-	ChIrrWizard::add_typical_Camera(application.GetDevice(), core::vector3df(-.6 * letters.length(), 0, 0),
-		core::vector3df((f32)0, 0, 0));
+	ChIrrWizard::add_typical_Camera(application.GetDevice(), core::vector3df(0, 0, -.6 * letters.length()),
+		core::vector3df((f32).25*letters.length(), 0, 0));
 
 	// This is for GUI tweaking of system parameters..
 	MyEventReceiver receiver(&application);
@@ -247,37 +236,38 @@ int main(int argc, char* argv[]) {
 
 	// Create the five walls of the rectangular container, using
 	// fixed rigid bodies of 'box' type:
-	// X - Depth
+	// X - Width
 	// Y - Height
-	// Z - Width
+	// Z - Depth
 
-	ChSharedPtr<ChBodyEasyBox> floorBody(new ChBodyEasyBox( 1, .1, .5*letters.length(), 1000, true, true));
-	floorBody->SetPos(ChVector<>(0, 0, 0));
+	ChSharedPtr<ChBodyEasyBox> floorBody(new ChBodyEasyBox(.5*letters.length()+.5, .1, .5, 1000, true, true));
+	floorBody->SetPos(ChVector<>(0.25*letters.length() , 0, 0));
 	floorBody->SetBodyFixed(true);
 
 	application.GetSystem()->Add(floorBody);
 	
 
-	ChSharedPtr<ChBodyEasyBox> wallBody1(new ChBodyEasyBox(.1, 1, .5*letters.length(), 1000, true, false));
-	wallBody1->SetPos(ChVector<>(-.5, .5, 0));
+	ChSharedPtr<ChBodyEasyBox> wallBody1(new ChBodyEasyBox(.1, 1, .5, 1000, true, false));
+	wallBody1->SetPos(ChVector<>(-.3, .5, 0));
 	wallBody1->SetBodyFixed(true);
 
 	application.GetSystem()->Add(wallBody1);
 
-	ChSharedPtr<ChBodyEasyBox> wallBody2(new ChBodyEasyBox(.1, 1, .5*letters.length(), 1000, true, false));
-	wallBody2->SetPos(ChVector<>(.5, .5, 0));
+	//This is the variable wall.
+	ChSharedPtr<ChBodyEasyBox> wallBody2(new ChBodyEasyBox(.1, 1, .5, 1000, true, false));
+	wallBody2->SetPos(ChVector<>(.5*letters.length() + .3, .5, 0));
 	wallBody2->SetBodyFixed(true);
 
 	application.GetSystem()->Add(wallBody2);
 
-	ChSharedPtr<ChBodyEasyBox> wallBody3(new ChBodyEasyBox(1, 1, .1, 1000, true, false));
-	wallBody3->SetPos(ChVector<>(0, .5, .25*letters.length()));
+	ChSharedPtr<ChBodyEasyBox> wallBody3(new ChBodyEasyBox(.5*letters.length() + .5, 1, .1, 1000, true, true));
+	wallBody3->SetPos(ChVector<>(0.25*letters.length(), .5, .25));
 	wallBody3->SetBodyFixed(true);
 
 	application.GetSystem()->Add(wallBody3);
 
-	ChSharedPtr<ChBodyEasyBox> wallBody4(new ChBodyEasyBox(1, 1, .1, 1000, true, false));
-	wallBody4->SetPos(ChVector<>(0, .5, -.25*letters.length()));
+	ChSharedPtr<ChBodyEasyBox> wallBody4(new ChBodyEasyBox(.5*letters.length() + .5, 1, .1, 1000, true, false));
+	wallBody4->SetPos(ChVector<>(0.25*letters.length(), .5, -.25));
 	wallBody4->SetBodyFixed(true);
 
 	application.GetSystem()->Add(wallBody4);
