@@ -10,9 +10,11 @@
 //
 
 /*
-2.) Work on spacing of the letters
-3.) Make letter textures look better
-Work on collisions
+1.) Create special cases for certain letters i.e. I, J, M
+2.) Make letter textures look better
+3.) Work on collisions
+4.) Fix E
+5.) Work on falling particles
 */
 
 ///////////////////////////////////////////////////
@@ -179,13 +181,14 @@ void assemble_letters(ChIrrApp& application, std::string letters) {
 		str = letters[i];
 
 		lettermesh->SetFilename(GetChronoDataFile((str + ".obj")));
-		lettertexture->SetTextureFilename(GetChronoDataFile("RedTexture.png"));
+		lettertexture->SetTextureFilename(GetChronoDataFile("bluwhite.png"));
 
 		letterBody->AddAsset(lettermesh);
 		letterBody->SetBodyFixed(true);
-		letterBody->RecomputeCollisionModel();
+		letterBody->GetCollisionModel()->ClearModel();
+		letterBody->GetCollisionModel()->BuildModel();
 		letterBody->SetCollide(true);
-		letterBody->SetPos(ChVector<>( .6*(i) , .1, 0));
+		letterBody->SetPos(ChVector<>( .65*(i) + .35, .1, 0));
 		letterBody->SetRot(Q_from_AngAxis(90, ChVector<>(90, 0, 0)));
 
 		application.GetSystem()->Add(letterBody);
@@ -209,6 +212,14 @@ int main(int argc, char* argv[]) {
 	std::string letters;
 	std::cin >> letters;
 
+	for (int i = 0; i < letters.length(); i++)
+	{
+		std::string abc = "abcdefghijklmnopqrstuvwxyz QWERTYUIOPASDFGHJKLZXCVBNM";
+		if (abc.find(letters[i]) == std::string::npos)
+			letters.erase(i);
+	}
+	
+
 
 	// Create a ChronoENGINE physical system
 	ChSystem mphysicalSystem;
@@ -220,9 +231,9 @@ int main(int argc, char* argv[]) {
 	// Easy shortcuts to add camera, lights, logo and sky in Irrlicht scene:
 	ChIrrWizard::add_typical_Logo(application.GetDevice());
 	ChIrrWizard::add_typical_Sky(application.GetDevice());
-	ChIrrWizard::add_typical_Lights(application.GetDevice(), core::vector3df(0, 0, -1),
-		core::vector3df((f32)0, 0, 0));
-	ChIrrWizard::add_typical_Camera(application.GetDevice(), core::vector3df(0, 0, -.6 * letters.length()),
+	ChIrrWizard::add_typical_Lights(application.GetDevice(), core::vector3df(0, 0, 2),
+		core::vector3df((f32).25*letters.length(), 0, 0));
+	ChIrrWizard::add_typical_Camera(application.GetDevice(), core::vector3df(0, 0, -.3 * letters.length()),
 		core::vector3df((f32).25*letters.length(), 0, 0));
 
 	// This is for GUI tweaking of system parameters..
@@ -240,34 +251,34 @@ int main(int argc, char* argv[]) {
 	// Y - Height
 	// Z - Depth
 
-	ChSharedPtr<ChBodyEasyBox> floorBody(new ChBodyEasyBox(.5*letters.length()+.5, .1, .5, 1000, true, true));
-	floorBody->SetPos(ChVector<>(0.25*letters.length() , 0, 0));
+	ChSharedPtr<ChBodyEasyBox> floorBody(new ChBodyEasyBox(.7*letters.length(), .1, .5, 1000, true, true));
+	floorBody->SetPos(ChVector<>(0.35*letters.length() , 0, 0));//This is half of the length of the floor
 	floorBody->SetBodyFixed(true);
 
 	application.GetSystem()->Add(floorBody);
 	
 
-	ChSharedPtr<ChBodyEasyBox> wallBody1(new ChBodyEasyBox(.1, 1, .5, 1000, true, false));
-	wallBody1->SetPos(ChVector<>(-.3, .5, 0));
+	ChSharedPtr<ChBodyEasyBox> wallBody1(new ChBodyEasyBox(.1, 1, .5, 1000, true, true));
+	wallBody1->SetPos(ChVector<>(-.05, .5, 0));
 	wallBody1->SetBodyFixed(true);
 
 	application.GetSystem()->Add(wallBody1);
 
-	//This is the variable wall.
-	ChSharedPtr<ChBodyEasyBox> wallBody2(new ChBodyEasyBox(.1, 1, .5, 1000, true, false));
-	wallBody2->SetPos(ChVector<>(.5*letters.length() + .3, .5, 0));
+	//This is the variable wall. Right-Side Wall
+	ChSharedPtr<ChBodyEasyBox> wallBody2(new ChBodyEasyBox(.1, 1, .5, 1000, true, true));
+	wallBody2->SetPos(ChVector<>(.7*letters.length()-.05, .5, 0));
 	wallBody2->SetBodyFixed(true);
 
 	application.GetSystem()->Add(wallBody2);
 
-	ChSharedPtr<ChBodyEasyBox> wallBody3(new ChBodyEasyBox(.5*letters.length() + .5, 1, .1, 1000, true, true));
-	wallBody3->SetPos(ChVector<>(0.25*letters.length(), .5, .25));
+	ChSharedPtr<ChBodyEasyBox> wallBody3(new ChBodyEasyBox(.7*letters.length(), 1, .1, 1000, true, true));
+	wallBody3->SetPos(ChVector<>(.35*letters.length(), .5, .25));
 	wallBody3->SetBodyFixed(true);
 
 	application.GetSystem()->Add(wallBody3);
 
-	ChSharedPtr<ChBodyEasyBox> wallBody4(new ChBodyEasyBox(.5*letters.length() + .5, 1, .1, 1000, true, false));
-	wallBody4->SetPos(ChVector<>(0.25*letters.length(), .5, -.25));
+	ChSharedPtr<ChBodyEasyBox> wallBody4(new ChBodyEasyBox(.7*letters.length(), 1, .1, 1000, true, false));
+	wallBody4->SetPos(ChVector<>(0.35*letters.length(), .5, -.25));
 	wallBody4->SetBodyFixed(true);
 
 	application.GetSystem()->Add(wallBody4);
